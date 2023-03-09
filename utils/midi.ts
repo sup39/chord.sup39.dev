@@ -35,4 +35,8 @@ export class InputManager {
     this.callback.pedalChanged?.(id);
     this.callback[state1 ? 'pedalOn' : 'pedalOff']?.(id);
   }
+  clear() {
+    this.notes.clear();
+    this.pedals.clear();
+  }
 }

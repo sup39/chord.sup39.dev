@@ -38,7 +38,7 @@ export default function App() {
   const tryNextQuestionRef = useRef((force=false) => {
     setAnswerState(o => {
       if (force) {
-        inputManagerRef.current.notes.clear();
+        inputManagerRef.current.clear();
       } else {
         if (inputManagerRef.current.notes.size || o.correct == null) return o;
       }
