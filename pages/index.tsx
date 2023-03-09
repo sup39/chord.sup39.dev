@@ -35,9 +35,9 @@ export default function App() {
     correct: boolean|null
   }>({correctCount: 0, totalCount: 0, notes: [], correct: true});
 
-  const tryNextQuestionRef = useRef(() => {
+  const tryNextQuestionRef = useRef((force=false) => {
     setAnswerState(o => {
-      if (inputManagerRef.current.notes.size || o.correct == null) return o;
+      if (!force && (inputManagerRef.current.notes.size || o.correct == null)) return o;
       questionRef.current = questionGeneratorRef.current();
       const count = {
         correctCount: o.correctCount,
@@ -107,7 +107,9 @@ export default function App() {
       <div className='Prompt'>{question.prompt}</div>
     </section>
     <section>
-      <div>{question.prompt === '' || answer.correct != null ? '真ん中のペダルを踏むと次の問題に進みます' : ''}</div>
+      {/* question.prompt === '' || answer.correct != null ? <div>真ん中のペダルを踏むと次の問題に進みます</div> : <></> */}
+      {question.prompt === '' || answer.correct != null ?
+        <button onClick={()=>tryNextQuestionRef.current(true)}>Next</button> : <></>}
       <h4>回答</h4>
       <Keyboard points={answer.notes} pointColor='#66f' shiftPoints={true} />
     </section>
