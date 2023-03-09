@@ -1,0 +1,11 @@
+site:
+  startYear: 2023
+  author: サポミク
+  title: サポミク
+  subtitle: Chord
+  icon: https://res.sup39.dev/icon.svg
+metaFields:
+  - {attr: author, label: '作者：'}
+  - {attr: createdAt, label: '作成日時：'}
+  - {attr: updatedAt, label: '更新日時：'}
+nav: []
