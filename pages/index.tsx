@@ -37,7 +37,11 @@ export default function App() {
 
   const tryNextQuestionRef = useRef((force=false) => {
     setAnswerState(o => {
-      if (!force && (inputManagerRef.current.notes.size || o.correct == null)) return o;
+      if (force) {
+        inputManagerRef.current.notes.clear();
+      } else {
+        if (inputManagerRef.current.notes.size || o.correct == null) return o;
+      }
       questionRef.current = questionGeneratorRef.current();
       const count = {
         correctCount: o.correctCount,
