@@ -37,11 +37,8 @@ export default function App() {
 
   const tryNextQuestionRef = useRef((force=false) => {
     setAnswerState(o => {
-      if (force) {
-        inputManagerRef.current.clear();
-      } else {
-        if (inputManagerRef.current.notes.size || o.correct == null) return o;
-      }
+      inputManagerRef.current.notes.clear();
+      if (!force && o.correct == null) return o;
       questionRef.current = questionGeneratorRef.current();
       const count = {
         correctCount: o.correctCount,
@@ -100,8 +97,12 @@ export default function App() {
         };
         // start
         setAnswerState(o => ({...o, ...getHistory()}));
-        // tryNextQuestionRef.current();
       });
+    document.addEventListener('keydown', e => {
+      if (e.key === ' ') {
+        tryNextQuestionRef.current();
+      }
+    });
   }, []);
 
   const question = questionRef.current;
