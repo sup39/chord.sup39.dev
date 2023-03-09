@@ -4,8 +4,7 @@
   "license": "MIT",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
+    "build": "git rebase main && next build && next export && rm -r docs && mv out docs && git checkout -- docs/CNAME docs/.nojekyll && git add . && git commit -m build",
     "lint": "eslint --ext .js,.jsx,.ts,.tsx,.mdx ."
   },
   "eslintConfig": {
