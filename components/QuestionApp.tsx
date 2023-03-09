@@ -1,8 +1,7 @@
-import MDXRoot from '@/MDXRoot';
 import Keyboard from '@/Keyboard';
 import {getMIDIDevices, InputManager} from '%/midi';
-import {useState, useEffect, useRef} from 'react';
-import {makeQGSimpleChord, questionDummy} from '%/questions';
+import React, {useState, useEffect, useRef} from 'react';
+import {Question, questionDummy} from '%/questions';
 
 export function tryParseJSON(o: any): any {
   try {
@@ -12,21 +11,19 @@ export function tryParseJSON(o: any): any {
   }
 }
 
-const lskey = 'chord/count';
-function getHistory() {
+function getHistory(lskey: string) {
   if (typeof localStorage === 'undefined') return {};
   const o = tryParseJSON(localStorage.getItem(lskey));
   if (o == null || typeof o !== 'object') return {};
   return Object.fromEntries(['totalCount', 'correctCount'].filter(k => k in o).map(k => [k, o[k]]));
 }
 
-const meta = {
-  title: 'Chord練習',
-  description: '作成中のChord練習ツール',
-};
-export default function App() {
+export default function QuestionApp({questionGeneratorRef, lskeyPrefix}: {
+  questionGeneratorRef: React.MutableRefObject<()=>Question>
+  lskeyPrefix?: string
+}) {
+  const lskey = lskeyPrefix == null ? null : lskeyPrefix+'/count';
   const inputManagerRef = useRef(new InputManager());
-  const questionGeneratorRef = useRef(makeQGSimpleChord());
   const questionRef = useRef(questionDummy);
   const [answer, setAnswerState] = useState<{
     correctCount: number
@@ -44,7 +41,7 @@ export default function App() {
         correctCount: o.correctCount,
         totalCount: o.totalCount+1,
       };
-      localStorage.setItem(lskey, JSON.stringify(count));
+      lskey && localStorage.setItem(lskey, JSON.stringify(count));
       return {...count, notes: [], correct: null};
     });
   });
@@ -81,7 +78,7 @@ export default function App() {
                 totalCount: o.totalCount,
                 correctCount: o.correctCount + (correct ? 1 : 0),
               };
-              localStorage.setItem(lskey, JSON.stringify(count));
+              lskey && localStorage.setItem(lskey, JSON.stringify(count));
               return {
                 ...count,
                 notes: Array.from(notes),
@@ -96,17 +93,17 @@ export default function App() {
           },
         };
         // start
-        setAnswerState(o => ({...o, ...getHistory()}));
+        setAnswerState(o => ({...o, ...(lskey ? getHistory(lskey) : {})}));
       });
     document.addEventListener('keydown', e => {
       if (e.key === ' ') {
         tryNextQuestionRef.current();
       }
     });
-  }, []);
+  }, [lskey]);
 
   const question = questionRef.current;
-  return <MDXRoot meta={meta} headings={[]} router={{pathname: '/'}}><>
+  return <>
     <section>
       <div className='Prompt'>{answer.correctCount} {'/'} {answer.totalCount}</div>
       <div className='Prompt'>{question.prompt}</div>
@@ -122,5 +119,5 @@ export default function App() {
       <h4>{answer.correct ? '正解！' : '不正解'}</h4>
       <Keyboard points={question.solution} pointColor='#f9f' shiftPoints={true} />
     </section>}
-  </></MDXRoot>;
+  </>;
 }

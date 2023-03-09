@@ -8,4 +8,11 @@ metaFields:
   - {attr: author, label: '作者：'}
   - {attr: createdAt, label: '作成日時：'}
   - {attr: updatedAt, label: '更新日時：'}
-nav: []
+nav:
+  - label: '1. Chord Name'
+    path: '1-chord-name/'
+    children:
+      - label: '1-1. 転回形(固定)'
+        path: '1-fixed'
+      - label: '1-2. 転回形(ランダム)'
+        path: '2-random'

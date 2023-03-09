@@ -32,7 +32,7 @@ const withMDX = mdx({
 });
 export default withMDX({
   pageExtensions: ['ts', 'tsx', 'js', 'jsx', 'md', 'mdx'],
-  trailingSlash: true,
+  trailingSlash: false,
   webpack(config) {
     config.module.rules.push({
       test: /\.ya?ml$/,
