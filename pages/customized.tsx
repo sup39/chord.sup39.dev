@@ -2,15 +2,9 @@ import {useState, useEffect, useRef} from 'react';
 import MDXRoot from '@/MDXRoot';
 import QuestionApp from '@/QuestionApp';
 import {noteNameDB} from '%/note';
-import {makeIndepQFChordRandomInv, makeQGChordRandomInv} from '%/questions';
+import {makeIndepQFChordRandomInv, makeQGChordRandomInv, qtypes, QType} from '%/questions';
 import {getConfig} from '%/localStorage';
 
-export type QType = Parameters<typeof makeQGChordRandomInv>[0];
-const qtypes = [
-  {value: 'order', label: 'C (第二転回形)'},
-  {value: 'root', label: '　C/G　'},
-  {value: 'highest', label: 'C (最高音: E)'},
-] as const;
 const cinvList = [
   {ctype: 'power', iinv: 0, label: 'Power(基本形)'},
   {ctype: 'power', iinv: 1, label: 'Power(転回形)'},

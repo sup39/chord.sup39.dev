@@ -90,7 +90,7 @@ export function makeQGChordRandomInv(type: 'order'|'root'|'highest', questionFac
     const prompt =
       type === 'order' ? `${sbase} (${invNames[iinv]})` :
         type === 'root' ? iinv === 0 ? sbase : `${sbase}/${ndb[solution[0]]}` :
-          `${sbase} (最高音: ${ndb[solution[2]]})`;
+          `${sbase} (最高音: ${ndb[solution[solution.length-1]]})`;
     return {
       prompt,
       check: SimpleCheckerFactory(solution[0], solution.slice(1).map(x => x-solution[0])),
@@ -104,3 +104,10 @@ export const questionDummy: Question = {
   check: () => null,
   solution: [],
 };
+
+export const qtypes = [
+  {value: 'order', label: '和音記号 (第X転回形)'},
+  {value: 'root', label: '和音記号/ルート'},
+  {value: 'highest', label: '和音記号 (最高音)'},
+] as const;
+export type QType = (typeof qtypes)[number]['value'];

@@ -1,15 +1,8 @@
 import {useState, useEffect, useRef} from 'react';
 import MDXRoot from '@/MDXRoot';
 import QuestionApp from '@/QuestionApp';
-import {defaultQFChordRandomInv, makeQGChordRandomInv} from '%/questions';
+import {defaultQFChordRandomInv, makeQGChordRandomInv, qtypes, QType} from '%/questions';
 import {getConfig} from '%/localStorage';
-
-export type QType = Parameters<typeof makeQGChordRandomInv>[0];
-const qtypes: {value: QType, label: string}[] = [
-  {value: 'order', label: 'C (第二転回形)'},
-  {value: 'root', label: '　C/G　'},
-  {value: 'highest', label: 'C (最高音: E)'},
-];
 
 const lskeyPrefix = 'practice/1-2/';
 const lskeyConfig = lskeyPrefix+'config';
