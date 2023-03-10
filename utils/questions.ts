@@ -1,5 +1,5 @@
 import {AnswerChecker, SimpleCheckerFactory} from '%/answer';
-import {noteNameBase, noteNameDB} from '%/note';
+import {noteNameBase, noteNameDB, chordNotes, chordTypes, chordSuffix, invNames} from '%/note';
 
 export type Question = {
   prompt: string
@@ -31,45 +31,66 @@ export function makeQGOctave() {
   };
 }
 
-const invDB = {
-  major: [0, 4, 7, 12, 16],
-  minor: [0, 3, 7, 12, 15],
-};
-const invNames = ['基本形', '第一転回形', '第二転回形'];
 export function makeQGChordFixedInv() {
-  let index = 0;
-  let ctype: keyof typeof invDB = 'major';
+  let iinv = 0;
+  let ctype: 'major' | 'minor' = 'major';
   let base = 0;
   return function QGChordFixedInv(): Question {
-    if (index === 0) {
+    if (iinv === 0) {
       ctype = Math.random() < 0.5 ? 'major' : 'minor';
       base = Math.random()*12|0;
     }
-    const solution = invDB[ctype].slice(index, index+3).map(off => base+off);
-    const sbase = noteNameDB[ctype][base][base] + (ctype === 'major' ? '' : 'm');
+    const solution = chordNotes[ctype][iinv].map(off => base+off);
+    const ndb = noteNameDB[ctype];
+    const sbase = ndb[base][base] + chordSuffix[ctype];
     const q = {
-      prompt: `${sbase} (${invNames[index]})`,
+      prompt: `${sbase} (${invNames[iinv]})`,
       check: SimpleCheckerFactory(solution[0], solution.slice(1).map(x => x-solution[0])),
       solution,
     };
     // next
-    index = (index+1)%3;
+    iinv = (iinv+1)%3;
     return q;
   };
 }
 
-export function makeQGChordRandomInv(type: 'order'|'root'|'highest') {
+export const randomElement = <T>(db: readonly T[]) => db[Math.random()*db.length|0];
+export type ChordQuestion = {
+  ctype: keyof typeof chordNotes
+  base: number
+  iinv: number
+};
+export const defaultQFChordRandomInv = () => {
+  const ctype = randomElement(['major', 'minor'] as const);
+  const base = Math.random()*12|0;
+  const iinv = Math.random()*chordNotes[ctype].length|0;
+  return {ctype, base, iinv};
+};
+export const cinvDB = chordTypes.flatMap(ctype => chordNotes[ctype].map((_, iinv) => ({ctype, iinv})));
+export const makeIndepQFChordRandomInv = ({base, cinv}: {
+  cinv?: {ctype: ChordQuestion['ctype'], iinv: number}[]
+  base?: number[]
+}) => {
+  const gBase = base == null || base.length === 0 ? (()=>Math.random()*12|0) : (()=>randomElement(base));
+  const cinvPool = cinv == null || cinv.length === 0 ? cinvDB : cinv;
+  const gCinv = () => randomElement(cinvPool);
+  return function indepQFChordRandomInv() {
+    return {
+      base: gBase(),
+      ...gCinv(),
+    };
+  };
+};
+export function makeQGChordRandomInv(type: 'order'|'root'|'highest', questionFactory: ()=>ChordQuestion) {
   return function QGChordFixedInv(): Question {
-    const ctype = Math.random() < 0.5 ? 'major' : 'minor';
-    const base = Math.random()*12|0;
-    const iinv = Math.random()*3|0;
-    const solution = invDB[ctype].slice(iinv, iinv+3).map(off => base+off);
-    const db = noteNameDB[ctype][base];
-    const sbase = db[base] + (ctype === 'major' ? '' : 'm');
+    const {ctype, base, iinv} = questionFactory();
+    const ndb = noteNameDB[ctype === 'power' ? Math.random()<0.5 ? 'major' : 'minor' : ctype][base];
+    const solution = chordNotes[ctype][iinv].map(off => base+off);
+    const sbase = ndb[base] + chordSuffix[ctype];
     const prompt =
       type === 'order' ? `${sbase} (${invNames[iinv]})` :
-        type === 'root' ? iinv === 0 ? sbase : `${sbase}/${db[solution[0]]}` :
-          `${sbase} (最高音: ${db[solution[2]]})`;
+        type === 'root' ? iinv === 0 ? sbase : `${sbase}/${ndb[solution[0]]}` :
+          `${sbase} (最高音: ${ndb[solution[2]]})`;
     return {
       prompt,
       check: SimpleCheckerFactory(solution[0], solution.slice(1).map(x => x-solution[0])),

@@ -21,8 +21,9 @@ const keyInfoDB = new Proxy([
     return {...info0, x: info0.x+octaveWidth*Math.floor(idx/12)};
   },
 });
+
 export default function Keyboard({
-  base=0, keyCount=24, points=[], shiftPoints=false, margin=10, strokeWidth=1,
+  base=0, keyCount=24, points=[], shiftPoints=true, margin=10, strokeWidth=1,
   pointColor='#f9f', whiteColor='#eee', blackColor='#000', whiteStroke='#000',
 }: {
   base?: number

@@ -22,7 +22,17 @@ export const noteNameDB = {
   minor: sharpCountBase.map(x => noteNameBase[(x+10)%12 <= 6 ? 'sharp' : 'flat']), // -2
 };
 
-export const chordNote = {
-  major: [0, 4, 7],
-  minor: [0, 3, 7],
+const makeInvDB = (notes: number[]) =>
+  notes.map((_, iinv) => notes.map((n, i, a) => a[(i+iinv)%a.length]+((i+iinv)>=a.length ? 12 : 0)));
+export const chordNotes = {
+  power: makeInvDB([0, 7]),
+  major: makeInvDB([0, 4, 7]),
+  minor: makeInvDB([0, 3, 7]),
 };
+export const chordTypes = Object.keys(chordNotes) as (keyof typeof chordNotes)[];
+export const chordSuffix = {
+  power: '5',
+  major: '',
+  minor: 'm',
+};
+export const invNames = ['基本形', '第一転回形', '第二転回形'];

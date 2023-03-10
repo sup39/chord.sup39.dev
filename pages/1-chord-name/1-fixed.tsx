@@ -3,7 +3,7 @@ import MDXRoot from '@/MDXRoot';
 import QuestionApp from '@/QuestionApp';
 import {makeQGChordFixedInv} from '%/questions';
 
-const lskeyPrefix = 'practice/1-1';
+const lskeyPrefix = 'practice/1-1/';
 const meta = {
   title: '1-1. 転回形(固定)',
   description: '転回形(固定)の練習ツール',

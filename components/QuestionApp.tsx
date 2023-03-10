@@ -2,27 +2,13 @@ import Keyboard from '@/Keyboard';
 import {getMIDIDevices, InputManager} from '%/midi';
 import React, {useState, useEffect, useRef} from 'react';
 import {Question, questionDummy} from '%/questions';
-
-export function tryParseJSON(o: any): any {
-  try {
-    return JSON.parse(o);
-  } catch {
-    return undefined;
-  }
-}
-
-function getHistory(lskey: string) {
-  if (typeof localStorage === 'undefined') return {};
-  const o = tryParseJSON(localStorage.getItem(lskey));
-  if (o == null || typeof o !== 'object') return {};
-  return Object.fromEntries(['totalCount', 'correctCount'].filter(k => k in o).map(k => [k, o[k]]));
-}
+import {getConfig} from '%/localStorage';
 
 export default function QuestionApp({questionGeneratorRef, lskeyPrefix}: {
   questionGeneratorRef: React.MutableRefObject<()=>Question>
   lskeyPrefix?: string
 }) {
-  const lskey = lskeyPrefix == null ? null : lskeyPrefix+'/count';
+  const lskey = lskeyPrefix == null ? null : lskeyPrefix+'count';
   const inputManagerRef = useRef(new InputManager());
   const questionRef = useRef(questionDummy);
   const [answer, setAnswerState] = useState<{
@@ -93,7 +79,7 @@ export default function QuestionApp({questionGeneratorRef, lskeyPrefix}: {
           },
         };
         // start
-        setAnswerState(o => ({...o, ...(lskey ? getHistory(lskey) : {})}));
+        setAnswerState(o => ({...o, ...(lskey ? getConfig(lskey, {totalCount: 0, correctCount: 0}) : {})}));
       });
     document.addEventListener('keydown', e => {
       if (e.key === ' ') {
