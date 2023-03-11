@@ -3,6 +3,7 @@ import {getMIDIDevices, InputManager} from '%/midi';
 import React, {useState, useEffect, useRef} from 'react';
 import {Question, questionDummy} from '%/questions';
 import {getConfig} from '%/localStorage';
+import {io} from 'socket.io-client';
 
 export default function QuestionApp({questionGeneratorRef, lskeyPrefix}: {
   questionGeneratorRef: React.MutableRefObject<()=>Question>
@@ -32,60 +33,80 @@ export default function QuestionApp({questionGeneratorRef, lskeyPrefix}: {
     });
   });
   useEffect(() => {
-    getMIDIDevices()
-      .then(([midi]) => {
+    const inputManager = inputManagerRef.current;
+    // input manager
+    inputManager.callback = {
+      noteChanged() {
+        setAnswerState(o => {
+          const {notes} = inputManager;
+          if (o.correct != null) return o;
+          const correct = questionRef.current.check(notes);
+          const count = {
+            totalCount: o.totalCount,
+            correctCount: o.correctCount + (correct ? 1 : 0),
+          };
+          lskey && localStorage.setItem(lskey, JSON.stringify(count));
+          return {
+            ...count,
+            notes: Array.from(notes),
+            correct,
+          };
+        });
+      },
+      pedalOn(id) {
+        if (id === 0x42) {
+          tryNextQuestionRef.current();
+        }
+      },
+    };
+
+    // handle midi message
+    function onMidiMessage(data: Uint8Array) {
+      if (data.byteLength !== 3) return;
+      const inputManager = inputManagerRef.current;
+      const [et, id, v] = data;
+      if (et === 0x80) {
+        inputManager.noteOff(id);
+        return;
+      } else if (et === 0x90) {
+        inputManager.noteOn(id);
+      } else if (et === 0xB0) {
+        // {0x40: 'R', 0x42: 'M', 0x43: 'L'}
+        inputManager.pedal(id, v);
+      } else {
+        return;
+      }
+    }
+
+    // connect socket.io server if specified via url query `midi`
+    // o.w. check midi
+    const url = typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('midi');
+    if (url != null) {
+      const socket = io(url, {reconnection: false});
+      socket.on('connect', () => {
+        console.log(`Connected`);
+        socket.on('midi', data => onMidiMessage(new Uint8Array(data)));
+      });
+      socket.on('connect_error', err => {
+        alert(`Fail to connect to ${url}`);
+        console.error(err);
+      });
+    } else {
+      getMIDIDevices().then(([midi]) => {
         if (midi == null) {
-          alert('MIDI not found');
+          if (url == null) alert('MIDI not found');
           return;
         }
-        const inputManager = inputManagerRef.current;
-        midi.onmidimessage = ({data}: any) => {
-          if (data.byteLength !== 3) return;
-          const [et, id, v] = data;
-          if (et === 0x80) {
-            inputManager.noteOff(id);
-            return;
-          } else if (et === 0x90) {
-            inputManager.noteOn(id);
-          } else if (et === 0xB0) {
-            // {0x40: 'R', 0x42: 'M', 0x43: 'L'}
-            inputManager.pedal(id, v);
-          } else {
-            return;
-          }
-        };
-        inputManager.callback = {
-          noteChanged() {
-            setAnswerState(o => {
-              const {notes} = inputManager;
-              if (o.correct != null) return o;
-              const correct = questionRef.current.check(notes);
-              const count = {
-                totalCount: o.totalCount,
-                correctCount: o.correctCount + (correct ? 1 : 0),
-              };
-              lskey && localStorage.setItem(lskey, JSON.stringify(count));
-              return {
-                ...count,
-                notes: Array.from(notes),
-                correct,
-              };
-            });
-          },
-          pedalOn(id) {
-            if (id === 0x42) {
-              tryNextQuestionRef.current();
-            }
-          },
-        };
+        midi.onmidimessage = ({data}: any) => onMidiMessage(data);
         // start
         setAnswerState(o => ({...o, ...(lskey ? getConfig(lskey, {totalCount: 0, correctCount: 0}) : {})}));
       });
-    document.addEventListener('keydown', e => {
-      if (e.key === ' ') {
-        tryNextQuestionRef.current();
-      }
-    });
+      document.addEventListener('keydown', e => {
+        if (e.key === ' ') {
+          tryNextQuestionRef.current();
+        }
+      });
+    }
   }, [lskey]);
 
   const question = questionRef.current;
