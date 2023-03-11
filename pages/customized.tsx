@@ -15,7 +15,7 @@ const cinvList = [
   {ctype: 'minor', iinv: 1, label: 'Minor(第一転回形)'},
   {ctype: 'minor', iinv: 2, label: 'Minor(第二転回形)'},
 ] as const;
-const baseList = noteNameDB.major[0];
+const baseList = noteNameDB.dominant.map((db, i) => db[i]);
 const defaultConfig = {
   qtype: 'order' as QType,
   cinvSel: cinvList.map(() => false),

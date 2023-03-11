@@ -9,12 +9,12 @@ metaFields:
   - {attr: createdAt, label: '作成日時：'}
   - {attr: updatedAt, label: '更新日時：'}
 nav:
-  - label: 'カスタマイズ'
+  - label: 'カスタマイズ練習'
     path: 'customized'
-  - label: '1. 和音名(開発中)'
-    path: '1-chord-name/'
-    children:
-      - label: '1-1. 転回形(固定)'
-        path: '1-fixed'
-      - label: '1-2. 転回形(ランダム)'
-        path: '2-random'
+  #- label: '1. 和音名(開発中)'
+  #  path: '1-chord-name/'
+  #  children:
+  #    - label: '1-1. 転回形(固定)'
+  #      path: '1-fixed'
+  #    - label: '1-2. 転回形(ランダム)'
+  #      path: '2-random'

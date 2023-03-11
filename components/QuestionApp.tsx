@@ -5,11 +5,18 @@ import {Question, questionDummy} from '%/questions';
 import {getConfig} from '%/localStorage';
 import {io} from 'socket.io-client';
 
+const defaultConfig = {
+  totalCount: 0,
+  correctCount: 0,
+  totalTimeC: 0,
+};
+
+const defaultAnswerState = {correctCount: 0, totalCount: 0, notes: [], correct: true, totalTimeC: 0};
 export default function QuestionApp({questionGeneratorRef, lskeyPrefix}: {
   questionGeneratorRef: React.MutableRefObject<()=>Question>
   lskeyPrefix?: string
 }) {
-  const lskey = lskeyPrefix == null ? null : lskeyPrefix+'count';
+  const lskey = lskeyPrefix == null ? null : lskeyPrefix+'stats';
   const inputManagerRef = useRef(new InputManager());
   const questionRef = useRef(questionDummy);
   const [answer, setAnswerState] = useState<{
@@ -17,19 +24,31 @@ export default function QuestionApp({questionGeneratorRef, lskeyPrefix}: {
     totalCount: number
     notes: number[]
     correct: boolean|null
-  }>({correctCount: 0, totalCount: 0, notes: [], correct: true});
+    totalTimeC: number
+  }>(defaultAnswerState);
+  const startTimeQRef = useRef(0);
+  const [timer, setTimer] = useState<number>(0);
+  const animFrameRef = useRef(NaN);
 
-  const tryNextQuestionRef = useRef((force=false) => {
+  function updateTimer() {
+    const now = +new Date();
+    setTimer(now-startTimeQRef.current);
+    animFrameRef.current = requestAnimationFrame(updateTimer);
+  }
+
+  const tryNextQuestionRef = useRef(() => {
     setAnswerState(o => {
+      if (o.correct == null) return o;
       inputManagerRef.current.notes.clear();
-      if (!force && o.correct == null) return o;
       questionRef.current = questionGeneratorRef.current();
-      const count = {
-        correctCount: o.correctCount,
+      startTimeQRef.current = +new Date();
+      updateTimer();
+      return {
+        ...o,
         totalCount: o.totalCount+1,
+        notes: [],
+        correct: null,
       };
-      lskey && localStorage.setItem(lskey, JSON.stringify(count));
-      return {...count, notes: [], correct: null};
     });
   });
   useEffect(() => {
@@ -41,13 +60,26 @@ export default function QuestionApp({questionGeneratorRef, lskeyPrefix}: {
           const {notes} = inputManager;
           if (o.correct != null) return o;
           const correct = questionRef.current.check(notes);
-          const count = {
+          // if answer submitted
+          const stats = {
             totalCount: o.totalCount,
-            correctCount: o.correctCount + (correct ? 1 : 0),
+            correctCount: o.correctCount,
+            totalTimeC: o.totalTimeC,
           };
-          lskey && localStorage.setItem(lskey, JSON.stringify(count));
+          if (correct != null) {
+            cancelAnimationFrame(animFrameRef.current);
+            const dt = +new Date() - startTimeQRef.current;
+            setTimer(dt);
+            // update stats
+            if (correct) {
+              stats.correctCount++;
+              stats.totalTimeC += dt;
+            }
+            lskey && localStorage.setItem(lskey, JSON.stringify(stats));
+          }
+          // return
           return {
-            ...count,
+            ...stats,
             notes: Array.from(notes),
             correct,
           };
@@ -99,7 +131,7 @@ export default function QuestionApp({questionGeneratorRef, lskeyPrefix}: {
         }
         midi.onmidimessage = ({data}: any) => onMidiMessage(data);
         // start
-        setAnswerState(o => ({...o, ...(lskey ? getConfig(lskey, {totalCount: 0, correctCount: 0}) : {})}));
+        setAnswerState(o => ({...o, ...(lskey != null ? getConfig(lskey, defaultConfig) : {})}));
       });
       document.addEventListener('keydown', e => {
         if (e.key === ' ') {
@@ -109,16 +141,33 @@ export default function QuestionApp({questionGeneratorRef, lskeyPrefix}: {
     }
   }, [lskey]);
 
+  function reset() {
+    if (window.confirm('本当にリセットしますか？')) {
+      if (lskey != null) {
+        localStorage.setItem(lskey, JSON.stringify(defaultConfig));
+      }
+      questionRef.current = questionDummy;
+      cancelAnimationFrame(animFrameRef.current);
+      setTimer(0);
+      setAnswerState({...defaultAnswerState});
+    }
+  }
+
   const question = questionRef.current;
   return <>
     <section>
-      <div className='Prompt'>{answer.correctCount} {'/'} {answer.totalCount}</div>
+      <div className='Prompt'>
+        <span>{answer.correctCount} {'/'} {answer.totalCount}</span>
+      </div>
+      <div>
+        平均時間：{answer.correctCount === 0 ? 'N/A' : (answer.totalTimeC/answer.correctCount/1000).toFixed(3)+'秒'}</div>
+      <div>回答時間：{(timer/1000).toFixed(3)}秒</div>
       <div className='Prompt'>{question.prompt}</div>
     </section>
     <section>
       {/* question.prompt === '' || answer.correct != null ? <div>真ん中のペダルを踏むと次の問題に進みます</div> : <></> */}
       {question.prompt === '' || answer.correct != null ?
-        <button onClick={()=>tryNextQuestionRef.current(true)}>Next</button> : <></>}
+        <button onClick={()=>tryNextQuestionRef.current()}>Next</button> : <></>}
       <h4>回答</h4>
       <Keyboard points={answer.notes} pointColor='#66f' shiftPoints={true} />
     </section>
@@ -126,5 +175,6 @@ export default function QuestionApp({questionGeneratorRef, lskeyPrefix}: {
       <h4>{answer.correct ? '正解！' : '不正解'}</h4>
       <Keyboard points={question.solution} pointColor='#f9f' shiftPoints={true} />
     </section>}
+    <button className="danger" onClick={reset}>リセット</button>
   </>;
 }
