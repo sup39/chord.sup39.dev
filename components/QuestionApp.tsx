@@ -19,6 +19,7 @@ export default function QuestionApp({questionGeneratorRef, lskeyPrefix}: {
   const lskey = lskeyPrefix == null ? null : lskeyPrefix+'stats';
   const inputManagerRef = useRef(new InputManager());
   const questionRef = useRef(questionDummy);
+  const question = questionRef.current;
   const [answer, setAnswerState] = useState<{
     correctCount: number
     totalCount: number
@@ -29,6 +30,7 @@ export default function QuestionApp({questionGeneratorRef, lskeyPrefix}: {
   const startTimeQRef = useRef(0);
   const [timer, setTimer] = useState<number>(0);
   const animFrameRef = useRef(NaN);
+  const socketRef = useRef<ReturnType<typeof io>>();
 
   function updateTimer() {
     const now = +new Date();
@@ -42,6 +44,7 @@ export default function QuestionApp({questionGeneratorRef, lskeyPrefix}: {
       inputManagerRef.current.notes.clear();
       questionRef.current = questionGeneratorRef.current();
       startTimeQRef.current = +new Date();
+      socketRef.current?.emit('state', {timer: null});
       updateTimer();
       return {
         ...o,
@@ -68,12 +71,13 @@ export default function QuestionApp({questionGeneratorRef, lskeyPrefix}: {
           };
           if (correct != null) {
             cancelAnimationFrame(animFrameRef.current);
-            const dt = +new Date() - startTimeQRef.current;
-            setTimer(dt);
+            const timer = +new Date() - startTimeQRef.current;
+            setTimer(timer);
+            socketRef.current?.emit('state', {timer});
             // update stats
             if (correct) {
               stats.correctCount++;
-              stats.totalTimeC += dt;
+              stats.totalTimeC += timer;
             }
             lskey && localStorage.setItem(lskey, JSON.stringify(stats));
           }
@@ -123,6 +127,7 @@ export default function QuestionApp({questionGeneratorRef, lskeyPrefix}: {
         alert(`Fail to connect to ${url}`);
         console.error(err);
       });
+      socketRef.current = socket;
     } else {
       getMIDIDevices().then(([midi]) => {
         if (midi == null) {
@@ -133,13 +138,17 @@ export default function QuestionApp({questionGeneratorRef, lskeyPrefix}: {
         // start
         setAnswerState(o => ({...o, ...(lskey != null ? getConfig(lskey, defaultConfig) : {})}));
       });
-      document.addEventListener('keydown', e => {
-        if (e.key === ' ') {
-          tryNextQuestionRef.current();
-        }
-      });
     }
+    document.addEventListener('keydown', e => {
+      if (e.key === ' ') {
+        tryNextQuestionRef.current();
+      }
+    });
   }, [lskey]);
+
+  useEffect(() => {
+    socketRef.current?.emit('state', {...answer, ...question});
+  }, [answer, question]);
 
   function reset() {
     if (window.confirm('本当にリセットしますか？')) {
@@ -153,7 +162,6 @@ export default function QuestionApp({questionGeneratorRef, lskeyPrefix}: {
     }
   }
 
-  const question = questionRef.current;
   return <>
     <section>
       <div className='Prompt'>
